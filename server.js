@@ -30,7 +30,8 @@ server.use(myLogger);
 
 
 //GET
-server.get(`/api/projects`, (req, res) => {
+server.get('/api/projects', (req, res) => {
+    db    
     projects
         .findByid(id)
         .then(projects => {
@@ -45,6 +46,21 @@ server.get(`/api/projects`, (req, res) => {
         });
 
 });
+
+server.get('/api/actions', (req, res) => {
+    db2
+        .find()
+        .then(actions => {
+            res.json({ actions });
+        })
+        .catch(error => {
+            res.json({ error });
+        });
+});
+
+
+
+
 
 
 //POST
@@ -61,6 +77,25 @@ server.post('/api/projects', (req, res) => {
         });
 });
 
+server.post('/api/actions', (req, res) => {
+    db2
+    const { changes } = req.body;
+    if (!changes) {
+        res.status(400).json({ errorMessage: 'No changes brother/sister' });
+
+    }
+    actions
+        .insert({ changes })
+        .then(id => {
+            res.status(201).send(id)
+        })
+        .catch(err => {
+            console.log(err)
+        })
+
+})
+
+
 //PUT
 
 server.put('api/projects/:id', (req, res) => {
@@ -73,6 +108,7 @@ server.put('api/projects/:id', (req, res) => {
             sendUserError(404, 'The project with the specified ID does not exist.', res);
             return;
         }
+        
         db
             .findById(id)
             .then(foundProject => {
@@ -82,14 +118,31 @@ server.put('api/projects/:id', (req, res) => {
                     res.status(200).json(project);
                 });
             });
-    })
+        })
         .cath(error => {
             sendUserError(500, 'Internal Server Error ', res);
             return;
         });
+
+});
+
+server.put('api/actions/:id', (req, res) => {
+    const { id } = req.params;
+    const { changes } = req.body;
+    users
+        .update(id, { changes });
     
+        .then(count => {
+        if (count !== 1) {
+            res.status(400).json({ errorMessage: 'Not Update' });
+        } else {
+            res.status(201).json({ id, changes });
+        }
 
-
+    });
+        .cath(error => {
+        console.log(error);
+    });
 
 });
 
@@ -114,19 +167,23 @@ server.delete('/api/projects/:id', (req, res) => {
 
 })
 
+server.delete('/api/actions/:id', (req, res) => {
+    const { id } = req.params;
+    actions
+        .remove(id)
+        .then(count => {
+            if (count === 0) {
+                res.status(404).json({ errorMessage: 'Not FOUND' });
+            } else {
+                res.status(201).json({ message: 'Deleted' });
+            }
 
+        })
+        .catch(err => {
+            console.log(err);
+        })
 
-
-
-
-
-
-
-
-
-
-
-
+})
 
 
 server.listen(port, () => console.log(`Server running on port ${port}`));
