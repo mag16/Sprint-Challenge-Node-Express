@@ -1,4 +1,4 @@
-//Marco Guzman 6/1 Pull Request note.
+//Marco Guzman 6/1 Pull
 # Express and Node.js Sprint Challenge
 
 ## Assignments

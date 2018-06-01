@@ -6,3 +6,20 @@ const db2 = require('./data/helpers/projectModel.js');
 const posts = require('./data/helpers/actionModel.js');
 const users = require('./data/helpers/mappers.js');
 const tags = require('./data/helpers/projectModel.js');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+server.listen(port, () => console.log(`Server running on port ${port}`));
