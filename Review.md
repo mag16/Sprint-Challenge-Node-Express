@@ -24,4 +24,4 @@ HTTP Status codes.
 
 
 ## What is CORS and why do we need it?
-CORS (Crpss Origin Resource Sharing) is a mechanism that uses extra HTTP headers to tell a browser to let a web APP at one domain to have permission to access selected resources from a server at a different origin (ex: web fonts, Images/videos, stylesheets, scritpts, FETCH APIs in a cross site manner).
+CORS (Cross Origin Resource Sharing) is a mechanism that uses extra HTTP headers to tell a browser to let a web APP at one domain to have permission to access selected resources from a server at a different origin (ex: web fonts, Images/videos, stylesheets, scritpts, FETCH APIs in a cross site manner).

@@ -1,189 +1,176 @@
-const express = require('express');
-const db = require('./data/helpers/actionModel.js');
-const db1 = require('./data/helpers/mappers.js');
-const db2 = require('./data/helpers/projectModel.js');
-
-
-const projects = require('./data/helpers/projectModel.js');
-const actions = require('./data/helpers/actionModel.js');
-
-
+const express = require("express");
+const cors = require("cors");
+const projectsdb = require("./data/helpers/projectModel");
+const actionsdb = require("./data/helpers/actionModel");
 const port = 5000;
+
 const server = express();
 server.use(express.json());
-server.use(log);
-server.use(cors({ origin: 'http://localhost:3000' }));
+server.use(cors({}));
 
-const myLogger = (req, res, next) => {
-    const ua = req.headers['user-agent'];
-    const { path } = req;
-    const timeStamp = Date.now();
-    const log = { ua, path, timeStamp };
-    const stringLog = JSON.stringify(log);
-
-    console.log(stringLog);
-
-    next();
-}
-
-server.use(myLogger);
-
-
-//GET
-server.get('/api/projects', (req, res) => {
-    db    
-    projects
-        .findByid(id)
-        .then(projects => {
-            if (projects.length === 0) {
-                res.status(404).json({ message: 'project not found' });
-            } else {
-                res.json(projects[0]);
-            }
-        })
-        .catch(err => {
-            res.status(500).json({ error: err });
-        });
-
-});
-
-server.get('/api/actions', (req, res) => {
-    db2
-        .find()
-        .then(actions => {
-            res.json({ actions });
-        })
-        .catch(error => {
-            res.json({ error });
-        });
-});
-
-
-
-
-
-
-//POST
-server.post('/api/projects', (req, res) => {
-    const { name, descriptions } = req.body;
-    db
-        .insert({ name, descriptions })
-        .then(response => {
-            res.json(response);
-        })
-        .catch(error => {
-            sendUserError(500, 'The projects information could not be retrieved.', res);
-            return;
-        });
-});
-
-server.post('/api/actions', (req, res) => {
-    db2
-    const { changes } = req.body;
-    if (!changes) {
-        res.status(400).json({ errorMessage: 'No changes brother/sister' });
-
-    }
-    actions
-        .insert({ changes })
-        .then(id => {
-            res.status(201).send(id)
-        })
-        .catch(err => {
-            console.log(err)
-        })
-
-})
-
-
-//PUT
-
-server.put('api/projects/:id', (req, res) => {
-    const { id } = req.params;
-    const { description } = req.body;
-    projects
-        .update(id, { description });
-        .then(response => {
-        if (response === 0) {
-            sendUserError(404, 'The project with the specified ID does not exist.', res);
-            return;
-        }
-        
-        db
-            .findById(id)
-            .then(foundProject => {
-                project = { ...foundProject[0] };
-
-                db.remove(id).then(response => {
-                    res.status(200).json(project);
-                });
-            });
-        })
-        .cath(error => {
-            sendUserError(500, 'Internal Server Error ', res);
-            return;
-        });
-
-});
-
-server.put('api/actions/:id', (req, res) => {
-    const { id } = req.params;
-    const { changes } = req.body;
-    users
-        .update(id, { changes });
-    
-        .then(count => {
-        if (count !== 1) {
-            res.status(400).json({ errorMessage: 'Not Update' });
-        } else {
-            res.status(201).json({ id, changes });
-        }
-
+//GET for Projects and Actions
+server.get("/api/projects", (req, res) => {
+  projectsdb
+    .get()
+    .then(projects => {
+      if (projects.length === 0) {
+        res.status(404).json({ message: "project not found" });
+      } else {
+        res.json(projects[0]);
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ error });
     });
-        .cath(error => {
-        console.log(error);
-    });
-
 });
 
+server.get("/api/actions", (req, res) => {
+  actionsdb
+    .get()
+    .then(actions => {
+      res.status(200).json({ actions });
+    })
+    .catch(error => {
+      res.status(500).json({ error: "Error retrieving actions" });
+    });
+});
 
-//DELETE
+// ***Retrieve the list of actions for a project.***
+server.get("/api/projects/:id/actions", (req, res) => {
+  const { id } = req.params;
+  projectsdb
+    .getProjectActions(id)
+    .then(projectsActs => {
+      res.status(200).json(projectsActs);
+    })
+    .catch(error => {
+      res.status(500).json({
+        error: `Internal Server Error:  Unable to reach database for project with provided id ${id}`
+      });
+    });
+});
 
-server.delete('/api/projects/:id', (req, res) => {
-    const { id } = req.params;
-    projects
-        .remove(id)
-        .then(count => {
-            if (count === 0) {
-                res.status(404).json({ errorMessage: 'Project does not exist' });
-            } else {
-                res.status(201).json({ message: 'Deleted!!!' });
-            }
+//POST for Projects and Actions
+server.post("/api/projects", (req, res) => {
+  const { name, description, completed } = req.body;
+  if (!name || !description ||!completed) {
+    res.status(400).json({
+      errorMessage: "Error: Name and Description of Project must be provided."
+    });
+  } else {
+    projectsdb
+      .insert({ name, description, completed })
+      .then(projects => {
+        res.status(200).json(projects);
+      })
 
-        })
-        .catch(err => {
-            console.log(err);
-        })
+      .catch(error => {
+        res
+          .status(500)
+          .json({ error: "The projects information could not be retrieved" });
+      });
+  }
+});
 
-})
+server.post("/api/actions", (req, res) => {
+  //actionsdb
+  const { name, description, completed, notes } = req.body;
+  if (!name || !description ||!completed ||!notes) {
+    res
+      .status(400)
+      .json({ errorMessage: "No changes recorded for this project" });
+  }
+  actionsdb
+    .insert({ name, description, completed, notes })
+    .then(id => {
+      res.status(201).send(id);
+    })
+    .catch(err => {
+      console.log(err);
+    });
+});
 
-server.delete('/api/actions/:id', (req, res) => {
-    const { id } = req.params;
-    actions
-        .remove(id)
-        .then(count => {
-            if (count === 0) {
-                res.status(404).json({ errorMessage: 'Not FOUND' });
-            } else {
-                res.status(201).json({ message: 'Deleted' });
-            }
+//PUT for Projects and Actions
 
-        })
-        .catch(err => {
-            console.log(err);
-        })
+server.put("api/projects/:id", (req, res) => {
+  const { id } = req.params;
+  const { name, description, completed } = req.body;
+  if (!name || !description) {
+    res.status(400).json({
+      errorMessage: "Error: The projects information could not be retrieved."
+    });
+  } else {
+    projectsdb
+      .update(id, { name, description, completed })
+      .then(project => {
+        res.status(200).json({ project });
+      })
+      .catch(error => {
+        res.status(500).json({
+          errorMessage: `Error: Internal Server Error.  Cannot retrieve project with id ${id}`
+        });
+      });
+  }
+});
 
-})
+server.put("api/actions/:id", (req, res) => {
+  const { id } = req.params;
+  const { description, notes, completed } = req.body;
+  if (!description|| !notes) {
+    res.status(400).json({errorMessage:"Error: The actions information could not be retrieved."});
+  } else {
+  actionsdb
+    .update(id, { description, notes, completed })
 
+    .then(count => {
+      if (count !== 1) {
+        res.status(400).json({ errorMessage: "Not Update" });
+      } else {
+        res.status(201).json({ id, changes });
+      }
+    })
+    .catch(error => {
+      res.status(500).json({ error: "Error: Internal Server Error." });
+    });
+  }
+});
+
+//DELETE for Projects and Actions
+
+server.delete("/api/projects/:id", (req, res) => {
+  const { id } = req.params;
+  projectsdb
+    .remove(id)
+    .then(count => {
+      if (count === 0) {
+        res.status(404).json({ errorMessage: "Project does not exist" });
+      } else {
+        res.status(201).json({ message: "Project Deleted!!!" });
+      }
+    })
+    .catch(err => {
+      res
+        .status(500)
+        .json({ error: `Error: Cannot delete project with id ${id}` });
+    });
+});
+
+server.delete("/api/actions/:id", (req, res) => {
+  const { id } = req.params;
+  actionsdb
+    .remove(id)
+    .then(count => {
+      if (count === 0) {
+        res.status(404).json({ errorMessage: "Actions Not FOUND" });
+      } else {
+        res.status(201).json({ message: "Actions Deleted!!!" });
+      }
+    })
+    .catch(error => {
+      res
+        .status(500)
+        .json({ error: `Error: Cannot delete actions with id ${id}` });
+    });
+});
 
 server.listen(port, () => console.log(`Server running on port ${port}`));
